@@ -1,64 +1,83 @@
-import cv2
 
-symbols = ['.','o','-','x']
+import cv2
+import numpy as np
+
+def dist(s1,s2):
+    s1 = s1.split(',')
+    s2 = s2.split(',')
+    return (int(s1[0])-int(s2[0]))**2+(int(s1[1])-int(s2[1]))**2+(int(s1[2])-int(s2[2]))**2
 
 def extract_valid_colors(img):
-    color_map = {}
-    color_ratio = {}
-    color_ratio_list = []
-    valid_colors = []
 
+    symbols = ['.','o','-','x']
+    symbol_color_map = {}
+
+    # convert image to linear array of color strings
+    img = img.reshape(len(img)*len(img[0]), 3).tolist()
+    img_string = np.array([','.join([str(x) for x in t]) for t in img])
+    color_frequency = np.unique(img_string, return_counts = True)
+
+    symbol_color_map[color_frequency[0][0]] = symbols[0]
+
+    last_used_color = color_frequency[0][0]
+    current_symbol = 1
+    updated = True
+
+    while(updated and current_symbol<4):
+        marked = None
+        updated = False
+        for color in color_frequency[0]:
+            if symbol_color_map.get(color,'') == '':
+                if(dist(last_used_color,color)<1):
+                    symbol_color_map[color] = symbol_color_map[last_used_color]
+                elif not marked:
+                    symbol_color_map[color] = symbols[current_symbol]
+                    current_symbol = current_symbol+1
+                    marked = color
+                    updated = True
+        last_used_color = marked
+
+    return symbol_color_map
+
+def get_transformation_steps(width_limit = None, height_limit = None):
+    if width_limit:
+        height_limit = int(width_limit * len(timg)/len(timg[0]))
+    elif height_limit:
+        width_limit = int(height_limit * len(timg[0])/len(timg))
+    else:
+        return [0,0]
+    wstep = int(len(timg[0])/width_limit)
+    hstep = int(len(timg)/height_limit)
+    return [wstep,hstep]
+
+
+def draw_image(img, symbol_color_map):
+    result = ''
     for px_list in img:
+        temp_result = ''
         for px in px_list:
-                try:
-                    color_map[str(px.tolist())]=color_map[str(px.tolist())]+1
-                except:
-                    color_map[str(px.tolist())]=1
+            color = ','.join([str(t) for t in px])
+            try:
+                temp_result = temp_result+symbol_color_map[color]
+            except:
+                temp_result = temp_result+'e'
+        result = result + '\n' + temp_result
 
-    total_colors = len(color_map.keys())
-
-    for color in color_map.keys():
-        color_ratio[color] = (color_map[color]+0.000)/total_colors
-
-    color_ratio_list = [[color_ratio[t], t] for t in color_ratio.keys()]
-    color_ratio_list.sort()
-    color_ratio_list.reverse()
-    valid_colors.append(color_ratio_list[0][1])
-    ratio = color_ratio_list[0][0]
-    index = 1
-    while(index < len(color_ratio_list) and int(color_ratio_list[index][0]*10/ratio)>=1):
-        valid_colors.append(color_ratio_list[index][1])
-        index = index+1
-
-    return valid_colors[0:4]
+    print(result)
 
 
-timg = cv2.imread('batman.png')
-width_limit = 200
-height_limit = int(width_limit * len(timg)/len(timg[0]))
-wstep = int(len(timg[0])/width_limit)
-hstep = int(len(timg)/height_limit)
-symbol_color_map = {}
+def main():
+    img = cv2.imread('batman.png')
+    wstep, hstep = get_transformation_steps(40)
 
-img = []
-for t in timg[0::hstep+1]:
-    r = []
-    for x in t[0::wstep+1]:
-        r.append(x)
-    img.append(r)
+    # step over the entire image matrix wstep along the width and hstep along the
+    # height. Transpose is used to easily convert rows to columns and remove the
+    # rows and transform back, saves from writing a loop and stepping
 
-valid_colors = extract_valid_colors(img)
-for t in range(0,len(valid_colors)):
-    symbol_color_map[valid_colors[t]] = symbols[t]
+    img = img[0::hstep+1].transpose(1,0,2)[0::wstep+1].transpose(1,0,2)
 
-r = ''
-for px_list in img:
-    t = ''
-    for px in px_list:
-        try:
-            t = t+symbol_color_map[str(px.tolist())]
-        except:
-            t = t+'e'
-    r = r + '\n' + t
+    symbol_color_map = extract_valid_colors(img)
 
-print(r)
+    draw_image(img, symbol_color_map)
+
+main()
