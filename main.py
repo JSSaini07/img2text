@@ -7,9 +7,9 @@ def dist(s1,s2):
     s2 = s2.split(',')
     return (int(s1[0])-int(s2[0]))**2+(int(s1[1])-int(s2[1]))**2+(int(s1[2])-int(s2[2]))**2
 
-def extract_valid_colors(img):
+def extract_valid_colors(img, num_colors, similarity):
 
-    symbols = ['.','o','-','x']
+    symbols = ['.','o','-','x','a','v','e','z','n','m']
     symbol_color_map = {}
 
     # convert image to linear array of color strings
@@ -28,7 +28,7 @@ def extract_valid_colors(img):
         updated = False
         for color in color_frequency[0]:
             if symbol_color_map.get(color,'') == '':
-                if(dist(last_used_color,color)<1):
+                if(dist(last_used_color,color)<similarity):
                     symbol_color_map[color] = symbol_color_map[last_used_color]
                 elif not marked:
                     symbol_color_map[color] = symbols[current_symbol]
@@ -39,15 +39,15 @@ def extract_valid_colors(img):
 
     return symbol_color_map
 
-def get_transformation_steps(width_limit = None, height_limit = None):
+def get_transformation_steps(img, width_limit = None, height_limit = None):
     if width_limit:
-        height_limit = int(width_limit * len(timg)/len(timg[0]))
+        height_limit = int(width_limit * len(img)/len(img[0]))
     elif height_limit:
-        width_limit = int(height_limit * len(timg[0])/len(timg))
+        width_limit = int(height_limit * len(img[0])/len(img))
     else:
         return [0,0]
-    wstep = int(len(timg[0])/width_limit)
-    hstep = int(len(timg)/height_limit)
+    wstep = int(len(img[0])/width_limit)
+    hstep = int(len(img)/height_limit)
     return [wstep,hstep]
 
 
@@ -66,18 +66,17 @@ def draw_image(img, symbol_color_map):
     print(result)
 
 
-def main():
-    img = cv2.imread('batman.png')
-    wstep, hstep = get_transformation_steps(40)
-
+def main(img_path, num_colors, similarity, width_limit = None, height_limit = None):
+    img = cv2.imread(img_path)
+    wstep, hstep = get_transformation_steps(img, width_limit, height_limit)
     # step over the entire image matrix wstep along the width and hstep along the
     # height. Transpose is used to easily convert rows to columns and remove the
     # rows and transform back, saves from writing a loop and stepping
 
     img = img[0::hstep+1].transpose(1,0,2)[0::wstep+1].transpose(1,0,2)
 
-    symbol_color_map = extract_valid_colors(img)
+    symbol_color_map = extract_valid_colors(img, num_colors, similarity)
 
     draw_image(img, symbol_color_map)
 
-main()
+main(img_path = 'jasmeet.jpg', num_colors = 10, similarity = 10000, width_limit=220)
