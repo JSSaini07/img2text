@@ -3,6 +3,7 @@ import cv2
 import sys
 import os
 import numpy as np
+from colr import color as cl
 
 def dist(s1,s2):
     s1 = s1.split(',')
@@ -11,7 +12,7 @@ def dist(s1,s2):
 
 def extract_valid_colors(img, num_colors, similarity):
 
-    symbols = ['.','o','*','c','<','>','r','z','n','m']
+    symbols = ['.','o','*','<','c','~','>','z','n','w']
     symbol_color_map = {}
 
     # convert image to linear array of color strings
@@ -49,7 +50,7 @@ def extract_valid_colors(img, num_colors, similarity):
 
 def get_transformation_steps(img, width_limit = None, height_limit = None):
     if width_limit:
-        height_limit = int(width_limit * len(img)/len(img[0]))
+        height_limit = int(width_limit * len(img)/(len(img[0])+1000))
     elif height_limit:
         width_limit = int(height_limit * len(img[0])/len(img))
     else:
@@ -59,14 +60,22 @@ def get_transformation_steps(img, width_limit = None, height_limit = None):
     return [wstep,hstep]
 
 
-def draw_image(img, symbol_color_map):
+def draw_image(img, symbol_color_map, color_disable):
     result = ''
     for px_list in img:
         temp_result = ''
         for px in px_list:
             color = ','.join([str(t) for t in px])
             try:
-                temp_result = temp_result+symbol_color_map[color]
+                pixels = px.tolist()
+                pixels.reverse()
+
+                if not color_disable:
+                    pxvalue = cl(symbol_color_map[color],fore = pixels)
+                else:
+                    pxvalue = symbol_color_map[color]
+
+                temp_result = temp_result+pxvalue
             except:
                 temp_result = temp_result+' '
         result = result + '\n' + temp_result
@@ -74,7 +83,7 @@ def draw_image(img, symbol_color_map):
     return result
 
 
-def convert(img_path, num_colors, similarity, width_limit = None, height_limit = None):
+def convert(img_path, num_colors, similarity, width_limit = None, height_limit = None, color_disable=False):
     img = cv2.imread(img_path)
     wstep, hstep = get_transformation_steps(img, width_limit, height_limit)
     # step over the entire image matrix wstep along the width and hstep along the
@@ -85,17 +94,25 @@ def convert(img_path, num_colors, similarity, width_limit = None, height_limit =
 
     symbol_color_map = extract_valid_colors(img, num_colors, similarity)
 
-    result = draw_image(img, symbol_color_map)
+    result = draw_image(img, symbol_color_map, color_disable=color_disable)
 
     return result
 
 
 if __name__ == "__main__":
-    result = convert(img_path = './images/batman.png', num_colors = 4, similarity = 10000, width_limit=100)
 
     save_file = [t for t in sys.argv[1:] if t.startswith('--output=')]
+    color_disable = [t for t in sys.argv[1:] if t.startswith('--color_disable')]
+
     if(len(save_file)):
         save_file = save_file[0].split('--output=')[1]
+
+    if(len(color_disable)):
+        color_disable = True
+    else:
+        color_disable = False
+
+    result = convert(img_path = './images/batman.png', num_colors = 10, similarity = 10000, width_limit=100, color_disable=color_disable)
 
     if save_file:
         open(save_file,'w').write(result)
