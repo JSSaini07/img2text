@@ -11,24 +11,30 @@ def dist(s1,s2):
 
 def extract_valid_colors(img, num_colors, similarity):
 
-    symbols = ['.','o','-','x','a','v','e','z','n','m']
+    symbols = ['.','o','*','c','<','>','r','z','n','m']
     symbol_color_map = {}
 
     # convert image to linear array of color strings
     img = img.reshape(len(img)*len(img[0]), 3).tolist()
     img_string = np.array([','.join([str(x) for x in t]) for t in img])
     color_frequency = np.unique(img_string, return_counts = True)
+    temp_color_frequency = []
+    for t in np.argsort(color_frequency,1)[1]:
+        temp_color_frequency.append(color_frequency[0][t])
 
-    symbol_color_map[color_frequency[0][0]] = symbols[0]
+    color_frequency = [t for t in temp_color_frequency]
+    color_frequency.reverse()
 
-    last_used_color = color_frequency[0][0]
+    symbol_color_map[color_frequency[0]] = symbols[0]
+
+    last_used_color = color_frequency[0]
     current_symbol = 1
     updated = True
 
     while(updated and current_symbol<num_colors):
         marked = None
         updated = False
-        for color in color_frequency[0]:
+        for color in color_frequency:
             if symbol_color_map.get(color,'') == '':
                 if(dist(last_used_color,color)<similarity):
                     symbol_color_map[color] = symbol_color_map[last_used_color]
@@ -62,7 +68,7 @@ def draw_image(img, symbol_color_map):
             try:
                 temp_result = temp_result+symbol_color_map[color]
             except:
-                temp_result = temp_result+'e'
+                temp_result = temp_result+' '
         result = result + '\n' + temp_result
 
     return result
@@ -85,7 +91,7 @@ def convert(img_path, num_colors, similarity, width_limit = None, height_limit =
 
 
 if __name__ == "__main__":
-    result = convert(img_path = 'atul.jpeg', num_colors = 10, similarity = 8000, width_limit=100)
+    result = convert(img_path = './images/batman.png', num_colors = 4, similarity = 10000, width_limit=100)
 
     save_file = [t for t in sys.argv[1:] if t.startswith('--output=')]
     if(len(save_file)):
