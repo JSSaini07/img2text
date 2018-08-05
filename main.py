@@ -1,5 +1,7 @@
 
 import cv2
+import sys
+import os
 import numpy as np
 
 def dist(s1,s2):
@@ -23,7 +25,7 @@ def extract_valid_colors(img, num_colors, similarity):
     current_symbol = 1
     updated = True
 
-    while(updated and current_symbol<4):
+    while(updated and current_symbol<num_colors):
         marked = None
         updated = False
         for color in color_frequency[0]:
@@ -63,10 +65,10 @@ def draw_image(img, symbol_color_map):
                 temp_result = temp_result+'e'
         result = result + '\n' + temp_result
 
-    print(result)
+    return result
 
 
-def main(img_path, num_colors, similarity, width_limit = None, height_limit = None):
+def convert(img_path, num_colors, similarity, width_limit = None, height_limit = None):
     img = cv2.imread(img_path)
     wstep, hstep = get_transformation_steps(img, width_limit, height_limit)
     # step over the entire image matrix wstep along the width and hstep along the
@@ -77,6 +79,20 @@ def main(img_path, num_colors, similarity, width_limit = None, height_limit = No
 
     symbol_color_map = extract_valid_colors(img, num_colors, similarity)
 
-    draw_image(img, symbol_color_map)
+    result = draw_image(img, symbol_color_map)
 
-main(img_path = 'jasmeet.jpg', num_colors = 10, similarity = 10000, width_limit=220)
+    return result
+
+
+if __name__ == "__main__":
+    result = convert(img_path = 'atul.jpeg', num_colors = 10, similarity = 8000, width_limit=100)
+
+    save_file = [t for t in sys.argv[1:] if t.startswith('--output=')]
+    if(len(save_file)):
+        save_file = save_file[0].split('--output=')[1]
+
+    if save_file:
+        open(save_file,'w').write(result)
+        print('file saved in {}'.format(save_file))
+    else:
+        print(result)
