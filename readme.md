@@ -1,6 +1,6 @@
 # img2Text
 Convert an image to ASCII art.
 
-![](images/batman.png =300x300) ![](images/batman_output.png =300x300)
+<img height="300" src="images/batman.png"> <img height="300" src="images/batman_output.png">
 
-![](images/pikachu.jpg =300x300) ![](images/pikachu_output.png =300x300)
+<img height="300" src="images/pikachu.jpg"> <img height="300" src="images/pikachu_output.png">
